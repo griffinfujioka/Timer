@@ -15,6 +15,7 @@
 .globl _inkmode
 .globl _tinth, _thandler
 .globl _freeList
+.globl _auto_start
 
 .text                                                !! these tell as:	
 begtext:                                             !! text,data,bss segments

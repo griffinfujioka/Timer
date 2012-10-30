@@ -22,25 +22,24 @@ int enable_irq(irq_nr) unsigned irq_nr;
  *				timer_init				     *
  *===========================================================================*/
 
-ushort tick;
-
+int tick, sec, min, hr;       /* wall clock */ 
 int timer_init()
 {
   /* Initialize channel 0 of the 8253A timer to e.g. 60 Hz. */
 
   printf("timer init\n");
-  tick = 0;
+  tick = sec = min = hr = 0;            /* initialize wall click to 0 */ 
 
-  out_byte(TIMER_MODE, SQUARE_WAVE);	/* set timer to run continuously */
-  out_byte(TIMER0, TIMER_COUNT);	/* load timer low byte */
-  out_byte(TIMER0, TIMER_COUNT >> 8);	/* load timer high byte */
-  enable_irq(TIMER_IRQ); 
+  out_byte(TIMER_MODE, SQUARE_WAVE);	 /* set timer to run continuously */
+  out_byte(TIMER0, TIMER_COUNT);	     /* load timer low byte */
+  out_byte(TIMER0, TIMER_COUNT >> 8);   /* load timer high byte */
+  enable_irq(TIMER_IRQ);                /* enable timer interrupts */ 
 }
 
 /*===========================================================================*
  *				timer_handler				     *
  *===========================================================================*/
-
+/* timer interrupt handler - process the interrupt */ 
 int thandler()
 {
     tick++; 
@@ -49,7 +48,7 @@ int thandler()
     if (tick % 60 == 0)
        printf("1 second timer interrupt\n");
 
-    out_byte(0x20, 0x20);  
+    out_byte(0x20, 0x20);     /* */ 
 
 }
 

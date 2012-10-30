@@ -40,10 +40,18 @@ typedef struct proc{
 
 **************************************************************/
 #include "type.h"
+#include "int.c"
+#include "vid.c" 
+#include "timer.c"
+//#include "io.c"
 
 struct rqueue rqueue[NQUEUE];       // at most NPROC separate ready queues
 
-PROC proc[NPROC], *running, *freeList, *sleepList;
+PROC proc[NPROC], *running;
+PROC *freeList, *sleepList;
+
+
+
 
 int procsize = sizeof(PROC);
 int nproc, color;
@@ -51,8 +59,7 @@ int nproc, color;
 int inkmode = 1;        // ADD KUmode transition flag; start in Kmode
  
 int body();
-char *pname[]={"Sun", "Mercury", "Venus", "Earth",  "Mars", "Jupiter", 
-               "Saturn", "Uranus", "Neptune" };
+char *pname[]= { "zero", "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"}; 
 
 
 /**********************************************************
@@ -63,9 +70,7 @@ char *pname[]={"Sun", "Mercury", "Venus", "Earth",  "Mars", "Jupiter",
 #include "forkexec.c"
 *********************************************************/
 
-#include "int.c"
-#include "vid.c" 
-#include "timer.c"
+
 
 int initialize()
 {
@@ -73,23 +78,25 @@ int initialize()
 
   printf("MTX initializing ....\n");
    
-  for (i=0; i < NPROC; i++){
-      proc[i].pid = i; 
-      proc[i].status = FREE;
-      proc[i].next = (PROC *)&proc[(i+1)];
-
-      strcpy(proc[i].name, pname[i]);
+  for (i=0; i < NPROC; i++)
+  {
+    proc[i].pid = i; 
+    proc[i].status = FREE;
+    proc[i].next = (PROC *)&proc[(i+1)];
+    strcpy(proc[i].name, pname[i]);
   }
   proc[NPROC-1].next = NULL;
   freeList = &proc[0];         // all PROC are FREE initially
    
-  for (i=0; i<NQUEUE; i++){    // initialize the scheduling queues
+  /* initialize the scheduling queues */ 
+  for (i=0; i<NQUEUE; i++)
+  {    
       rqueue[i].priority = i;
       rqueue[i].queue = 0;
   }
   sleepList = 0;
 
-  // create P0
+  // create P0 by brute force 
   p = getproc();              // get a FREE PROC
 
   p->status = READY;
@@ -134,6 +141,7 @@ int body()
 }
 
 int int80h();
+int tinth();
 
 int set_vec(vector, addr) ushort vector, addr;
 {
@@ -143,27 +151,26 @@ int set_vec(vector, addr) ushort vector, addr;
     put_word(0x1000,0,location+2);
 }
 
-int tinth();
 
 //*************** main() ***************
 main()
 {
+  vid_init();
+  printf("vid_init : console display driver initialized\n");
 
-   vid_init();
-   printf("vid_init : console display driver initialized\n");
-
-   printf("\nWelcome to the MTX Operating System\n");
+  printf("\nWelcome to the MTX Operating System\n");
     
-    initialize();
+  initialize();
  
-     set_vec(80, int80h);
+  /* Install interrupt handlers */ 
+  set_vec(80, int80h);      /* syscall interrupt handler */ 
+  set_vec(8, tinth);        /* timer interrupt handler */ 
 
-   printf("P0 forks P1\n");
-     kfork();
+  printf("P0 forks P1\n");
+  kfork();
 
-     lock();
-       set_vec( 8, tinth);
-       timer_init(); 
+  lock();   /* Mask out ALL interrupts */ 
+  timer_init(); 
 
    printf("P0 switches to P1\n");
 
